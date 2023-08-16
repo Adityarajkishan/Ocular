@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hugging Face Tutorial</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        display: grid;
+        place-items: center;
+    }
+</style>
+
+<body>
+
+    <h1>Hugging Face Tutorial</h1>
+    <h2>Select an image</h2>
+    <input type="file" id="imageInput" accept="image/*">
+    <br>
+    <img src="#" id="preview" alt="img">
+    <h2 id="result"></h2>
+
+    <script>
+        const url = 'https://api-inference.huggingface.co/models/adityarajkishan/Image_Captioning_Model';
+        let token;
+
+        document.getElementById("preview").style.display = "none";
+
+        fetch('./config.json')
+            .then(response => response.json())
+            .then(config => {
+                token = config.token;
+            });
+
+        document.getElementById("imageInput").addEventListener("change", async function (event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.addEventListener("load", () => {
+                document.getElementById("preview").setAttribute("src", reader.result);
+                document.getElementById("preview").style.display = "block";
+            });
+
+            reader.readAsDataURL(file);
+
+            reader.onloadend = async () => {
+                const data = {
+                    "inputs": { image: reader.result.split(',')[1] }
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const responseData = await response.json();
+                    const generatedText = responseData[0].generated_text;
+
+                    document.getElementById("result").innerHTML = `Caption: ${generatedText}`;
+                } catch (error) {
+                    console.error("Error:", error);
+                    document.getElementById("result").innerHTML = "An error occurred.";
+                }
+            };
+        });
+    </script>
+
+</body>
+
+</html>
